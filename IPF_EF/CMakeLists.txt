@@ -24,15 +24,19 @@ set(CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} /CETCOMPAT /NXCOMPA
 # Always use the dynamic release runtime for framework compatibility
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
-# Get nlohmann/json library
-include(FetchContent)
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03  # v3.11.3
-)
-FetchContent_MakeAvailable(nlohmann_json)
-
+# Get nlohmann/json library.
+# Reuse an nlohmann_json target already provided by the embedding project (e.g. OpenVINO's
+# thirdparty/json) to avoid a duplicate target definition (CMP0002). Only fetch a bundled
+# copy when no such target exists (standalone IPF builds).
+if(NOT TARGET nlohmann_json AND NOT TARGET nlohmann_json::nlohmann_json)
+    include(FetchContent)
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03  # v3.11.3
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
 set(CLIENTAPI_SOURCES
     extras/c_wrapper/ClientApiCJson.cpp
     src/clientapi/ClientApi.cpp
