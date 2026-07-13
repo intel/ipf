@@ -21,8 +21,12 @@ set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /ZH:SHA_256 /W4 /WX /Zi
 set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT /NXCOMPAT /DYNAMICBASE /HIGHENTROPYVA /guard:cf /debug:full")
 set(CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} /CETCOMPAT /NXCOMPAT /DYNAMICBASE /HIGHENTROPYVA /guard:cf /debug:full")
 
-# Always use the dynamic release runtime for framework compatibility
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+# Use dynamic runtime and keep it config-aware.
+# Respect parent-project policy when already defined.
+if(NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+    # Debug -> /MDd, non-Debug -> /MD.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
+endif()
 
 # Get nlohmann/json library.
 # Reuse an nlohmann_json target already provided by the embedding project (e.g. OpenVINO's
