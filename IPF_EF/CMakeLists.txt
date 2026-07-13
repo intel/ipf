@@ -25,7 +25,7 @@ set(CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} /CETCOMPAT /NXCOMPA
 # Respect parent-project policy when already defined.
 if(NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
     # Debug -> /MDd, non-Debug -> /MD.
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 # Get nlohmann/json library.
