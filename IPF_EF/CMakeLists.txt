@@ -56,7 +56,9 @@ set(CLIENTAPI_INCLUDE_DIRS
 
 # ClientApiLib - static library
 add_library(ClientApiLib STATIC ${CLIENTAPI_SOURCES})
-target_include_directories(ClientApiLib PUBLIC ${CLIENTAPI_INCLUDE_DIRS})
+target_include_directories(ClientApiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
+                                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
+                                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>)
 target_link_libraries(ClientApiLib PUBLIC nlohmann_json::nlohmann_json)
 
 # ClientApi - shared library (DLL)
