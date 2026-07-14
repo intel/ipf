@@ -2,7 +2,8 @@
 # IPF-EF Client Library
 #
 # Builds two targets:
-#   ClientApiLib  - static library
+#   ClientApiLib  - object library, meant to be absorbed into a consumer's own
+#                   installed/exported target (see comment below)
 #   ClientApi     - shared library (the loadable ClientApi DLL)
 # ============================================================================
 cmake_minimum_required(VERSION 3.15)
@@ -54,8 +55,14 @@ set(CLIENTAPI_INCLUDE_DIRS
     src/shared
 )
 
-# ClientApiLib - static library
-add_library(ClientApiLib STATIC ${CLIENTAPI_SOURCES})
+# ClientApiLib - object library.
+# Embedding projects (e.g. OpenVINO plugins) are expected to absorb these
+# object files directly into their own installed/exported target via
+# target_link_libraries(), rather than linking against a standalone static
+# archive. This keeps ClientApiLib's private dependencies (nlohmann_json)
+# out of any exported link interface, since object libraries are never
+# installed/exported as linkable targets on their own.
+add_library(ClientApiLib OBJECT ${CLIENTAPI_SOURCES})
 target_include_directories(ClientApiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
                                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
                                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>)
