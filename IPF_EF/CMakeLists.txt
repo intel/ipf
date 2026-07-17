@@ -2,8 +2,7 @@
 # IPF-EF Client Library
 #
 # Builds two targets:
-#   ClientApiLib  - object library, meant to be absorbed into a consumer's own
-#                   installed/exported target (see comment below)
+#   ClientApiLib  - static library
 #   ClientApi     - shared library (the loadable ClientApi DLL)
 # ============================================================================
 cmake_minimum_required(VERSION 3.15)
@@ -18,16 +17,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # MSVC hardening flags
 set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} /ZH:SHA_256 /W4 /WX /Zi /FS /GS /sdl /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
-set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /ZH:SHA_256 /W4 /WX /Zi /FS /GS /sdl /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /ZH:SHA_256 /W4 /WX /Zi /FS /GS /sdl /Qspectre /D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
 set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT /NXCOMPAT /DYNAMICBASE /HIGHENTROPYVA /guard:cf /debug:full")
 set(CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} /CETCOMPAT /NXCOMPAT /DYNAMICBASE /HIGHENTROPYVA /guard:cf /debug:full")
 
-# Use dynamic runtime and keep it config-aware.
-# Respect parent-project policy when already defined.
-if(NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-    # Debug -> /MDd, non-Debug -> /MD.
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-endif()
+# Always use the dynamic release runtime for framework compatibility
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 # Get nlohmann/json library.
 # Reuse an nlohmann_json target already provided by the embedding project (e.g. OpenVINO's
@@ -55,14 +50,8 @@ set(CLIENTAPI_INCLUDE_DIRS
     src/shared
 )
 
-# ClientApiLib - object library.
-# Embedding projects (e.g. OpenVINO plugins) are expected to absorb these
-# object files directly into their own installed/exported target via
-# target_link_libraries(), rather than linking against a standalone static
-# archive. This keeps ClientApiLib's private dependencies (nlohmann_json)
-# out of any exported link interface, since object libraries are never
-# installed/exported as linkable targets on their own.
-add_library(ClientApiLib OBJECT ${CLIENTAPI_SOURCES})
+# ClientApiLib - static library
+add_library(ClientApiLib STATIC ${CLIENTAPI_SOURCES})
 target_include_directories(ClientApiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
                                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
                                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>)
