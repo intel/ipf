@@ -22,4 +22,5 @@
 #define VERSION_MINOR 4
 #define VERSION_PATCH 0
 
+// Keep this string in sync with VERSION_MAJOR, VERSION_MINOR, and VERSION_PATCH.
 #define VERSION_STRING "2.4.0"
