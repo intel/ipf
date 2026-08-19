@@ -48,6 +48,7 @@ set(CLIENTAPI_SOURCES
     src/clientapi/ClientApi.cpp
     src/shared/DllProperties.cpp
     src/shared/win/StringUtils.cpp
+    src/clientapi/ClientApi.rc
 )
 
 set(CLIENTAPI_INCLUDE_DIRS
@@ -66,6 +67,11 @@ target_link_libraries(ClientApiLib PRIVATE nlohmann_json::nlohmann_json)
 # ClientApi - shared library (DLL)
 add_library(ClientApi SHARED ${CLIENTAPI_SOURCES})
 set_target_properties(ClientApi PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+# Set version metadata
+set(CLIENTAPI_RC_FILES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi/ClientApi.rc)
+source_group("Resource Files" FILES ${CLIENTAPI_RC_FILES})
+
 # Use BUILD_INTERFACE absolute paths so in-tree consumers get the headers while
 # the export/install of ClientApi carries no relative include dirs (they are
 # automatically stripped from the install interface). These headers are internal
