@@ -1,8 +1,10 @@
 #include <winver.h>
 
+#include "Version.h"
+
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION 2,4,0,0
-    PRODUCTVERSION 2,4,0,0
+    FILEVERSION VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, 0
+    PRODUCTVERSION VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, 0
     FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
     FILEFLAGS VS_FF_DEBUG
@@ -19,12 +21,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Intel Corporation\0"
             VALUE "FileDescription", "Client library to get system telemetry from Intel Innovation Platform Framework service\0"
-            VALUE "FileVersion", "2.4.0\0"
+            VALUE "FileVersion", VERSION_STRING "\0"
             VALUE "InternalName", "ClientApi\0"
             VALUE "LegalCopyright", "Apache License 2.0\0"
             VALUE "OriginalFilename", "ClientApi.dll\0"
             VALUE "ProductName", "Intel Innovation Platform Framework Client API\0"
-            VALUE "ProductVersion", "2.4.0\0"
+            VALUE "ProductVersion", VERSION_STRING "\0"
         END
     END
     BLOCK "VarFileInfo"
