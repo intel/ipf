@@ -70,10 +70,18 @@ static inline version_t GetSdkVersion()
 	return version;
 }
 
+// Export these symbols only from the ClientApi DLL. Static-library consumers must not
+// propagate them into the export table of the binary that links ClientApiLib.
+#if defined(ClientApi_EXPORTS)
+#define DLLPROPERTIES_EXPORT DLLEXPORT
+#else
+#define DLLPROPERTIES_EXPORT
+#endif
+
 // Referencing these symbols causes DllProperties to be linked from static libraries
 extern "C"
 {
-	extern DLLEXPORT buildtype_t GetDllBuildType();
-	extern DLLEXPORT version_t GetDllVersion();
-	extern DLLEXPORT const char* GetDllProperties();
+	extern DLLPROPERTIES_EXPORT buildtype_t GetDllBuildType();
+	extern DLLPROPERTIES_EXPORT version_t GetDllVersion();
+	extern DLLPROPERTIES_EXPORT const char* GetDllProperties();
 }

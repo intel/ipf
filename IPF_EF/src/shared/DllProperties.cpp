@@ -86,20 +86,20 @@ static std::string GetFileProperty(const std::string& filename, const std::strin
 
 using namespace Ipf;
 
-// Exported Symbols
+// ClientApi symbols (exported only from the shared target)
 extern "C"
 {
-	DLLEXPORT buildtype_t GetDllBuildType()
+	DLLPROPERTIES_EXPORT buildtype_t GetDllBuildType()
 	{
 		return GetSdkBuildType();
 	}
 
-	DLLEXPORT version_t GetDllVersion()
+	DLLPROPERTIES_EXPORT version_t GetDllVersion()
 	{
 		return GetSdkVersion();
 	}
 
-	DLLEXPORT const char* GetDllProperties()
+	DLLPROPERTIES_EXPORT const char* GetDllProperties()
 	{
 		static std::string properties;
 		if (properties.empty()) {
