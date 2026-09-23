@@ -46,9 +46,12 @@ endif()
 set(CLIENTAPI_SOURCES
     extras/c_wrapper/ClientApiCJson.cpp
     src/clientapi/ClientApi.cpp
-    src/shared/DllProperties.cpp
     src/shared/win/StringUtils.cpp
     src/clientapi/ClientApi.rc
+)
+
+set(CLIENTAPI_DYNAMIC_SOURCES
+    src/shared/DllProperties.cpp
 )
 
 set(CLIENTAPI_INCLUDE_DIRS
@@ -65,7 +68,7 @@ target_include_directories(ClientApiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT
 target_link_libraries(ClientApiLib PRIVATE nlohmann_json::nlohmann_json)
 
 # ClientApi - shared library (DLL)
-add_library(ClientApi SHARED ${CLIENTAPI_SOURCES})
+add_library(ClientApi SHARED ${CLIENTAPI_SOURCES} ${CLIENTAPI_DYNAMIC_SOURCES})
 set_target_properties(ClientApi PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 # Set version metadata
