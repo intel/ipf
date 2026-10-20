@@ -101,12 +101,11 @@ extern "C"
 
 	DLLEXPORT const char* GetDllProperties()
 	{
-		static std::string properties;
-		if (properties.empty()) {
+		static const std::string properties = []() {
 			buildtype_t build = GetSdkBuildType();
 			std::string pathname = GetCurrentModulePathname();
 
-			properties = R"({
+			std::string json = R"({
 	"schema_type": "module_properties",
 	"schema_revision": 1,
 	"body": {
@@ -133,7 +132,9 @@ extern "C"
 	}
 }
 )";
-		}
+
+			return json;
+		}();
 		return properties.c_str();
 	}
 }

@@ -10,7 +10,7 @@ This repository contains the source code needed to build both the static and dyn
 
 ## How to build
 
-1. Open the `IPF_EF` directory using the VS2022 Developer PowerShell
+1. Open the `IPF_EF` directory using the VS2022 Developer Powershell
 2. Run `cmake -S . -B build -G "Visual Studio 17 2022" -A x64` to generate the build folder
 3. Run `cmake --build build --config Release` to build the libraries
 
