@@ -20,7 +20,7 @@
 
 // IPF Extensible Framework SDK Version
 #define IPFSDK_VER_MAJOR 2
-#define IPFSDK_VER_MINOR 4
+#define IPFSDK_VER_MINOR 5
 #define IPFSDK_VER_REVISION 8888
 #define IPFSDK_VER_BUILD 9999
 

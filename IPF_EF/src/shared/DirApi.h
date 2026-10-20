@@ -21,6 +21,7 @@
 #include "Base.h"
 #include "DllApi.h"
 #include "Exceptions.h"
+#include "FrameworkLoadConfig.h"
 #include "OsAbstractLayer.h"
 #include <cstring>
 #include <filesystem>
@@ -57,12 +58,6 @@ constexpr const char* SYSTEM_ROOT_PREFIX = "\\SystemRoot";
 constexpr const char* SYSTEM_ROOT_ENV = "%SystemRoot%";
 } // namespace IpfDriverRegistry
 #endif
-
-// Configuration for framework directory loading retry behavior
-struct FrameworkLoadConfig {
-	unsigned int initial_framework_retries = 121; // Default: 121 attempts (2 min @ 1sec/attempt)
-	unsigned int retry_delay_ms = 1000;           // Default: 1 second between retries
-};
 
 // IPF Driver installation status
 enum class IpfDriverStatus {

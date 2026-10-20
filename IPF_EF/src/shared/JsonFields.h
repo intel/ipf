@@ -17,6 +17,7 @@
 ******************************************************************************/
 
 #pragma once
+#include <array>
 #include <set>
 
 namespace Ipf
@@ -25,119 +26,89 @@ namespace Ipf
 namespace JsonFields
 {
 
+// General JSON field constants commonly used in IPF JSON schemas and data.
 constexpr char SCHEMA_TYPE[] = "schema_type";
 constexpr char SCHEMA_REVISION[] = "schema_revision";
 constexpr char PLATFORM_CONFIG[] = "platform_config";
-constexpr char PROVIDER_MANIFEST[] = "provider_manifest";
 constexpr char PROVIDER_CONFIG[] = "provider_config";
-constexpr char PROVIDER_CATALOG[] = "provider_catalog";
-constexpr char MODULE_PROPERTIES[] = "module_properties";
-constexpr char GET_PROPERTIES[] = "get_properties";
-constexpr char PROVIDER_CAPABILITIES[] = "provider_capabilities";
-constexpr char EVENT_SETTINGS[] = "event_settings";
 constexpr char FRAMEWORK_EVENT_SETTINGS[] = "framework_event_settings";
-constexpr char BLOCKED_PROVIDER_CONFIG[] = "blocked_provider_config";
-constexpr char EXAMPLES[] = "examples";
 constexpr char DESCRIPTION[] = "description";
-constexpr char PROVIDER_PACKAGES[] = "provider_packages";
-constexpr char MODULES[] = "modules";
-constexpr char LOCAL_PROVIDERS[] = "local_providers";
-constexpr char INF_PROVIDERS[] = "inf_providers";
-constexpr char FILE_PROVIDERS[] = "file_providers";
 constexpr char BODY[] = "body";
-constexpr char NAMESPACE[] = "namespace";
-constexpr char INSTANCE_NAME[] = "name";
-constexpr char CLASS[] = "class";
-constexpr char UNIQUE_ID[] = "unique_id";
-constexpr char ALLOWED_UNIQUE_IDs[] = "allowed_unique_ids";
-constexpr char CHILDREN[] = "children";
-constexpr char PROPERTIES[] = "properties";
 constexpr char INIT[] = "init";
-constexpr char ATTACH[] = "attach";
-constexpr char LOCATION[] = "location";
 constexpr char OPTIONS[] = "options";
-constexpr char OBJECT_TYPE[] = "object";
-constexpr char COMMANDS[] = "commands";
-constexpr char EVENTS[] = "events";
-constexpr char SCHEMA[] = "schema";
-constexpr char NAME[] = "name";
-constexpr char DATA_SCHEMA[] = "data_schema";
-constexpr char EVENT_SCHEMA[] = "event_schema";
-constexpr char INIT_SCHEMA[] = "init_schema";
-constexpr char COMMAND_SCHEMA[] = "command_schema";
-constexpr char RESULT_SCHEMA[] = "result_schema";
-constexpr char PROPERTIES_TYPE[] = "properties_type";
 constexpr char CATALOG[] = "catalog";
 constexpr char VERSION[] = "version";
 constexpr char AUTHOR[] = "author";
-constexpr char REVISION[] = "revision";
-constexpr char ATTACH_INSTRUCTIONS[] = "attach_instructions";
+constexpr char PACKAGE[] = "package";
 constexpr char PROVIDERS[] = "providers";
-constexpr char NAMESPACE_CHANGED[] = "NamespaceChanged";
-constexpr char PROVIDER_INSTANCE_CREATED[] = "ProviderInstanceCreated";
-constexpr char PROVIDER_INSTANCE_DELETED[] = "ProviderInstanceDeleted";
-constexpr char PROVIDER_SCHEMA_CHANGED[] = "ProviderSchemaChanged";
-constexpr char EXCEPTION_LIST[] = "ExceptionList";
-constexpr char PROVIDER_CAPABILITIES_CHANGED[] = "ProviderCapabilitiesChanged";
-constexpr char GET_LAST_ERROR[] = "GetLastError";
-constexpr char TIME_STAMP[] = "TimeStamp";
-constexpr char INSTANCE[] = "instance";
-constexpr char PARTKEY[] = "PartKey";
 constexpr char INCLUDE[] = "include";
 constexpr char EXCLUDE[] = "exclude";
-constexpr char PLATFORM[] = "Platform";
-constexpr char PROVIDER_CLASS[] = "ProviderClass";
-constexpr char PROVIDER_VERSION[] = "ProviderVersion";
 constexpr char PRODUCT_VERSION[] = "product_version";
-constexpr char BLOCKED_PROVIDERS[] = "blocked_providers";
-constexpr char FRAMEWORK_IMPACTED[] = "framework_impacted";
-constexpr char BINARY_HASH[] = "binary_hash";
-constexpr char EMPTY_JSON_OBJECT[] = "{}";
-constexpr char FRAMEWORK_NAME[] = "Framework";
-constexpr char CLIENT_INFO[] = "client_info";
-constexpr char CLIENT_CONFIG[] = "client_config";
-constexpr char CLIENT_REVISION[] = "client_revision";
-constexpr char CLIENT_PATH[] = "client_path";
 
 // Fields supporting NodeStatusChanged Status Events
 constexpr char NODE_STATUS_CHANGED[] = "NodeStatusChanged";
 constexpr char NODE_STATUS_PATH[] = "Path";
 constexpr char NODE_STATUS_STATUS[] = "Status";
+constexpr char NODE_STATUS_EVENT_PATHS[] = "NodeStatusEventPaths";
 constexpr char NODE_STATUS_UNKNOWN[] = "Unknown";
 constexpr char NODE_STATUS_NOT_READY[] = "NotReady";
 constexpr char NODE_STATUS_READY[] = "Ready";
-constexpr char NODE_STATUS_EVENT_PATHS[] = "NodeStatusEventPaths";
-
-// Fields supporting NamespaceChanged Status Events
-constexpr char PROVIDER[] = "Provider";
 
 // Fields supporting EventSubscriptionRestoreFailed events
 constexpr char EVENT_SUBSCRIPTION_RESTORE_FAILED[] = "EventSubscriptionRestoreFailed";
 constexpr char PATHS[] = "Paths";
 
-// Fields supporting provider exception events
-constexpr char NODE_EXCEPTION_EVENT[] = "NodeException";
-constexpr char MODULE_EXCEPTION_EVENT[] = "ModuleException";
-constexpr char NODE[] = "Node";
-constexpr char MODULE[] = "Module";
-constexpr char DURINGINIT[] = "DuringInit";
-constexpr char EXCEPTION[] = "Exception";
+// Fields supporting Framework Load Options
+constexpr char FRAMEWORK_LOAD_OPTIONS[] = "framework_load_options";
+constexpr char INITIAL_FRAMEWORK_RETRIES[] = "initial_framework_retries";
+constexpr char RETRY_DELAY_MS[] = "retry_delay_ms";
+constexpr char MINIMUM_FRAMEWORK_VERSION[] = "minimum_framework_version";
 
-// Fields supporting generic events
-constexpr char GENERIC_EVENTS[] = "generic_events";
-constexpr char TRIGGER_TYPE[] = "TriggerType";
-constexpr char SAMPLING[] = "Sampling";
-constexpr char ABSOLUTE_THRESHOLD[] = "AbsoluteThreshold";
-constexpr char RELATIVE_THRESHOLD[] = "RelativeThreshold";
-constexpr char CURRENT_VALUE[] = "CurrentValue";
-constexpr char CURRENT_TIME[] = "CurrentTime";
-constexpr char TRIGGER_SAMPLING[] = "TriggerSampling";
-constexpr char TRIGGER_THRESHOLD[] = "TriggerThreshold";
-constexpr char SAMPLING_INTERVAL[] = "SamplingInterval";
-constexpr char UPPER_THRESHOLD[] = "UpperThreshold";
-constexpr char LOWER_THRESHOLD[] = "LowerThreshold";
+// Provider Isolation keywords
+constexpr char DISABLE_PROVIDER_ISOLATION[] = "disable_provider_isolation";
 
-// Fields supporting capabilities
+// Schema type identifiers for the publicly published schemas (see IpfSchemaTool).
+constexpr char PROVIDER_MANIFEST[] = "provider_manifest";
+constexpr char PROVIDER_CATALOG[] = "provider_catalog";
+constexpr char MODULE_PROPERTIES[] = "module_properties";
+constexpr char GET_PROPERTIES[] = "get_properties";
+constexpr char GET_PROPERTIES_NAMESPACE[] = "get_properties_namespace";
+constexpr char GET_PROPERTIES_CATALOG[] = "get_properties_catalog";
+constexpr char PROVIDER_CAPABILITIES[] = "provider_capabilities";
+constexpr char EVENT_SETTINGS[] = "event_settings";
+constexpr char BLOCKED_PROVIDER_CONFIG[] = "blocked_provider_config";
+
+// Fields appearing in the provider_manifest schema
+constexpr char UNIQUE_ID[] = "unique_id";
+constexpr char ATTACH[] = "attach";
+constexpr char LOCATION[] = "location";
+constexpr char INSTANCE_NAME[] = "name";
+constexpr char NAME[] = "name";
+constexpr char CLASS[] = "class";
+constexpr char ALLOWED_UNIQUE_IDs[] = "allowed_unique_ids";
+constexpr char MODULES[] = "modules";
+constexpr char EXAMPLES[] = "examples";
+constexpr char REVISION[] = "revision";
+constexpr char ATTACH_INSTRUCTIONS[] = "attach_instructions";
+constexpr char PROVIDER_TYPE[] = "provider_type";
+constexpr char PROVIDER_TYPE_CORE[] = "Core";
+constexpr char PROVIDER_TYPE_LOCAL[] = "Local";
+constexpr char PROVIDER_TYPE_EXTENSION[] = "Extension";
+
+// Fields appearing in the provider_config schema
+constexpr char LOCAL_PROVIDERS[] = "local_providers";
+
+// Fields appearing in the provider_catalog schema
+constexpr char PROVIDER_PACKAGES[] = "provider_packages";
+constexpr char INF_PROVIDERS[] = "inf_providers";
+constexpr char FILE_PROVIDERS[] = "file_providers";
+constexpr char BUILTIN_PROVIDERS[] = "builtin_providers";
+
+// Fields appearing in the get_properties schema
+constexpr char PROPERTIES_TYPE[] = "properties_type";
+constexpr char NAMESPACE[] = "namespace";
+
+// Fields appearing in the provider_capabilities schema
 constexpr char PROPERTY_CAPABILITIES[] = "PropertyCapabilities";
 constexpr char SAMPLING_INTERVAL_MIN[] = "SamplingIntervalMin";
 constexpr char SAMPLING_INTERVAL_MAX[] = "SamplingIntervalMax";
@@ -152,14 +123,75 @@ constexpr char ROLE_PUBLIC[] = "Public";
 constexpr char ROLE_ELEVATED[] = "Elevated";
 constexpr char IS_STATIC[] = "Static";
 
-// Fields supporting Framework Load Options
-constexpr char FRAMEWORK_LOAD_OPTIONS[] = "framework_load_options";
-constexpr char INITIAL_FRAMEWORK_RETRIES[] = "initial_framework_retries";
-constexpr char RETRY_DELAY_MS[] = "retry_delay_ms";
-constexpr char MINIMUM_FRAMEWORK_VERSION[] = "minimum_framework_version";
+// Fields appearing in the event_settings (generic events) schema
+constexpr char TRIGGER_SAMPLING[] = "TriggerSampling";
+constexpr char SAMPLING_INTERVAL[] = "SamplingInterval";
+constexpr char TRIGGER_THRESHOLD[] = "TriggerThreshold";
+constexpr char UPPER_THRESHOLD[] = "UpperThreshold";
+constexpr char LOWER_THRESHOLD[] = "LowerThreshold";
+constexpr char RELATIVE_THRESHOLD[] = "RelativeThreshold";
 
-// Provider Isolation keywords
-constexpr char DISABLE_PROVIDER_ISOLATION[] = "disable_provider_isolation";
+// Fields appearing in the blocked_provider_config schema
+constexpr char BLOCKED_PROVIDERS[] = "blocked_providers";
+constexpr char BINARY_HASH[] = "binary_hash";
+constexpr char FRAMEWORK_IMPACTED[] = "framework_impacted";
+
+// Fields describing a provider node tree and its schemas, as returned by the
+// ClientApi GetNode / GetSchema calls.
+constexpr char CHILDREN[] = "children";
+constexpr char PROPERTIES[] = "properties";
+constexpr char COMMANDS[] = "commands";
+constexpr char EVENTS[] = "events";
+constexpr char OBJECT_TYPE[] = "object";
+constexpr char SCHEMA[] = "schema";
+constexpr char DATA_SCHEMA[] = "data_schema";
+constexpr char EVENT_SCHEMA[] = "event_schema";
+constexpr char INIT_SCHEMA[] = "init_schema";
+constexpr char COMMAND_SCHEMA[] = "command_schema";
+constexpr char RESULT_SCHEMA[] = "result_schema";
+
+// FrameworkProvider events and commands, exposed on the "Framework" namespace
+// for clients to subscribe to and parse.
+constexpr char FRAMEWORK_NAME[] = "Framework";
+constexpr char NAMESPACE_CHANGED[] = "NamespaceChanged";
+constexpr char PROVIDER_INSTANCE_CREATED[] = "ProviderInstanceCreated";
+constexpr char PROVIDER_INSTANCE_DELETED[] = "ProviderInstanceDeleted";
+constexpr char PROVIDER_SCHEMA_CHANGED[] = "ProviderSchemaChanged";
+constexpr char PROVIDER_CAPABILITIES_CHANGED[] = "ProviderCapabilitiesChanged";
+constexpr char EXCEPTION_LIST[] = "ExceptionList";
+constexpr char GET_LAST_ERROR[] = "GetLastError";
+
+// Fields appearing in FrameworkProvider event data
+constexpr char PROVIDER[] = "Provider";
+constexpr char INSTANCE[] = "instance";
+constexpr char PARTKEY[] = "PartKey";
+constexpr char PLATFORM[] = "Platform";
+constexpr char PROVIDER_CLASS[] = "ProviderClass";
+constexpr char PROVIDER_VERSION[] = "ProviderVersion";
+constexpr char TIME_STAMP[] = "TimeStamp";
+
+// Fields supporting provider exception events
+constexpr char NODE_EXCEPTION_EVENT[] = "NodeException";
+constexpr char MODULE_EXCEPTION_EVENT[] = "ModuleException";
+constexpr char NODE[] = "Node";
+constexpr char MODULE[] = "Module";
+constexpr char DURINGINIT[] = "DuringInit";
+constexpr char EXCEPTION[] = "Exception";
+
+// Fields appearing in generic event data
+constexpr char GENERIC_EVENTS[] = "generic_events";
+constexpr char TRIGGER_TYPE[] = "TriggerType";
+constexpr char SAMPLING[] = "Sampling";
+constexpr char ABSOLUTE_THRESHOLD[] = "AbsoluteThreshold";
+constexpr char CURRENT_VALUE[] = "CurrentValue";
+constexpr char CURRENT_TIME[] = "CurrentTime";
+
+// Client configuration fields
+constexpr char EMPTY_JSON_OBJECT[] = "{}";
+constexpr char CLIENT_INFO[] = "client_info";
+constexpr char CLIENT_CONFIG[] = "client_config";
+constexpr char CLIENT_REVISION[] = "client_revision";
+constexpr char CLIENT_PATH[] = "client_path";
 
 // Json schema Keywords
 constexpr char SCHEMA_SCHEMA[] = "$schema";
@@ -254,6 +286,9 @@ static const std::set<const char*> SchemaKeywords = {
 	SCHEMA_EXAMPLES,
 	SCHEMA_CONTENT_MEDIA_TYPE,
 	SCHEMA_CONTENT_ENCODING};
+
+// List of Banned JSON Keywords
+inline constexpr std::array<const char*, 1> BANNED_KEYWORDS = {{SCHEMA_WRITE_ONLY}};
 
 } // namespace JsonFields
 } // namespace Ipf

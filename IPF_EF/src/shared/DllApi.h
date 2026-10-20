@@ -37,7 +37,7 @@
 #define DLLFILENAME(name) DLLPREFIX name DLLEXT
 #define DLLSEP "/"
 #define DLLOpen(lib) dlopen(lib, RTLD_NOW | RTLD_GLOBAL)
-#define DLLSymbol(h, fn) dlsym(h, fn)
-#define DLLClose(h) dlclose(h)
+#define DLLSymbol(h, fn) (h && fn ? dlsym(h, fn) : nullptr)
+#define DLLClose(h) (h ? dlclose(h) : (void)h)
 #define ERROR_SUCCESS 0
 #endif

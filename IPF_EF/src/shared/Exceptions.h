@@ -41,6 +41,7 @@ constexpr ipf_exception_code_t AccessDeniedExceptionCode = 500;
 constexpr ipf_exception_code_t JsonExceptionCode = 600;
 constexpr ipf_exception_code_t ProviderNotFoundCode = 700;
 constexpr ipf_exception_code_t NotImplementedCode = 800;
+constexpr ipf_exception_code_t ApiFeatureUnavailableCode = 900;
 constexpr ipf_exception_code_t ProviderExceptionCode = 50000;
 
 class IpfException : public std::runtime_error
@@ -122,7 +123,8 @@ public:
 	static constexpr char DEFAULT_PROVIDER_EXCEPTION[] = "Unknown provider Exception";
 	static constexpr char UNSUPPORTED_PROVIDER_METHOD[] = "Unsupported method by provider: ";
 	static constexpr char EVENT_NOT_REGISTERED[] = "Event was not registered: ";
-	static constexpr char EVENT_CALLBACK_NOT_REGISTERED[] = "Callback was not registered for event: ";
+	static constexpr char EVENT_CALLBACK_NOT_REGISTERED[] =
+		"Callback was not registered for event: ";
 	static constexpr char UNKNOWN_EVENT[] = "Event is unknown in the provider event schema: ";
 
 	ProviderException() : ProviderException{std::string(DEFAULT_PROVIDER_EXCEPTION)}
@@ -246,6 +248,21 @@ public:
 	{}
 };
 
+class ApiFeatureUnavailableException : public FrameworkException
+{
+public:
+	explicit ApiFeatureUnavailableException(const std::string& feature_name)
+		: FrameworkException(
+			  "API feature '" + feature_name +
+				  "' is not available on the installed version of the framework because it "
+				  "predates the introduction of the feature.",
+			  ApiFeatureUnavailableCode)
+	{}
+	ApiFeatureUnavailableException(const std::string& what_msg, const int err_code)
+		: FrameworkException{what_msg, err_code}
+	{}
+};
+
 // Error in strict case where a static function is compiled out
 #if defined(_WIN32)
 #pragma warning(push)
@@ -280,6 +297,10 @@ static inline void RethrowException()
 	}
 	catch (const LimitExceededException& e) {
 		IPF_TRACE_DEBUG("LimitExceededException: %s\n", e.what());
+		throw e;
+	}
+	catch (const ApiFeatureUnavailableException& e) {
+		IPF_TRACE_DEBUG("ApiFeatureUnavailableException: %s\n", e.what());
 		throw e;
 	}
 	catch (const FrameworkException& e) {
