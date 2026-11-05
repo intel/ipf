@@ -29,7 +29,7 @@
 #define snprintf(str, siz, fmt, ...) _snprintf_s(str, siz, _TRUNCATE, fmt, ##__VA_ARGS__)
 #endif
 
-/* API Implmentation Helper Macros */
+/* API Implementation Helper Macros */
 
 #define BEGIN_EXCEPTIONS_HANDLING try {
 
@@ -57,6 +57,11 @@
 #define CHECK_PARAM_IPF                                                                            \
 	if (!pIpf) {                                                                                   \
 		(void)snprintf(LastError, ARRAY_SIZE(LastError), "pIpf is null");                          \
+		return IpfError::IPF_ERR_INVALIDPARAM;                                                     \
+	}                                                                                              \
+	Ipf::ClientApi* ipf_instance = IpfGetInstance(pIpf);                                           \
+	if (!ipf_instance) {                                                                           \
+		(void)snprintf(LastError, ARRAY_SIZE(LastError), "pIpf is not a valid instance");          \
 		return IpfError::IPF_ERR_INVALIDPARAM;                                                     \
 	}
 

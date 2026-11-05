@@ -30,10 +30,11 @@ set(CMAKE_MODULE_LINKER_FLAGS  "${CMAKE_MODULE_LINKER_FLAGS} /CETCOMPAT /NXCOMPA
 # Always use the dynamic release runtime for framework compatibility
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
-# Get nlohmann/json library.
-# Reuse an nlohmann_json target already provided by the embedding project (e.g. OpenVINO's
-# thirdparty/json) to avoid a duplicate target definition (CMP0002). Only fetch a bundled
-# copy when no such target exists (standalone IPF builds).
+# Windows system libraries to link
+set(OSLIBS bcrypt)
+
+# Get nlohmann/json library
+# nlohmann/json will only be fetched if not already provided when this CMake project is embedded in another.
 if(NOT TARGET nlohmann_json AND NOT TARGET nlohmann_json::nlohmann_json)
     include(FetchContent)
     FetchContent_Declare(
@@ -43,9 +44,19 @@ if(NOT TARGET nlohmann_json AND NOT TARGET nlohmann_json::nlohmann_json)
     )
     FetchContent_MakeAvailable(nlohmann_json)
 endif()
+
+if(TARGET nlohmann_json::nlohmann_json)
+    set(NLOHMANN_JSON_TARGET nlohmann_json::nlohmann_json)
+else()
+    set(NLOHMANN_JSON_TARGET nlohmann_json)
+endif()
+
 set(CLIENTAPI_SOURCES
     extras/c_wrapper/ClientApiCJson.cpp
     src/clientapi/ClientApi.cpp
+    src/clientapi/ClientApiLoader.cpp
+    src/clientapi/JsonObjectTranslators.cpp
+    src/shared/FrameworkLoadConfig.cpp
     src/shared/win/StringUtils.cpp
     src/clientapi/ClientApi.rc
 )
@@ -54,32 +65,30 @@ set(CLIENTAPI_DYNAMIC_SOURCES
     src/shared/DllProperties.cpp
 )
 
-set(CLIENTAPI_INCLUDE_DIRS
-    extras/c_wrapper
-    src/clientapi
-    src/shared
-)
-
 # ClientApiLib - static library
 add_library(ClientApiLib STATIC ${CLIENTAPI_SOURCES})
-target_include_directories(ClientApiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
-                                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
-                                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>)
-target_link_libraries(ClientApiLib PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(ClientApiLib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../Common>)
+target_link_libraries(ClientApiLib PUBLIC $<BUILD_INTERFACE:${NLOHMANN_JSON_TARGET}> PRIVATE ${OSLIBS})
 
 # ClientApi - shared library (DLL)
 add_library(ClientApi SHARED ${CLIENTAPI_SOURCES} ${CLIENTAPI_DYNAMIC_SOURCES})
 set_target_properties(ClientApi PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 # Set version metadata
-set(CLIENTAPI_RC_FILES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi/ClientApi.rc)
+set(CLIENTAPI_RC_FILES $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi/ClientApi.rc>)
 source_group("Resource Files" FILES ${CLIENTAPI_RC_FILES})
 
 # Use BUILD_INTERFACE absolute paths so in-tree consumers get the headers while
 # the export/install of ClientApi carries no relative include dirs (they are
 # automatically stripped from the install interface). These headers are internal
 # to IPF and are intentionally not published as an install interface.
-target_include_directories(ClientApi PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
-                                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
-                                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>)
-target_link_libraries(ClientApi PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(ClientApi PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/extras/c_wrapper>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/clientapi>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../Common>)
+target_link_libraries(ClientApi PUBLIC $<BUILD_INTERFACE:${NLOHMANN_JSON_TARGET}> PRIVATE ${OSLIBS})

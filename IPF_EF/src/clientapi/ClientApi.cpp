@@ -16,61 +16,24 @@
 **
 ******************************************************************************/
 
-#include <errno.h>
 #include <filesystem>
-#include <map>
+#include <optional>
+#include <variant>
 
-#include "ClientApi.h"      // Public User Interface
+#include "ClientApi.h" // Public User Interface
+#include "ClientApiLoader.h"
 #include "ClientApiProxy.h" // Hidden Dynamic Library Implementation
-#include "DirApi.h"         // Get the install path of the exe
-#include "DllApi.h"
-#include "DllProxy.h" // Dynamic Library Interface Template
+#include "ClientApiRevisionTraits.h"
+#include "DirApi.h" // Get the install path of the exe
 #include "Exceptions.h"
+#include "FrameworkLoadConfig.h"
 #include "IClientApi.h"
 #include "JsonFields.h"
 #include "Revision.h"
 #include "nlohmann/json.hpp"
 
-#define CLIENTAPI_DLLNAME DLLFILENAME("ClientApiProxy")
-
 namespace Ipf
 {
-
-//////////////////////////////////////////////
-// DLL Loader for ClientApi Proxy class
-//////////////////////////////////////////////
-
-class ClientApiLoader : public DllProxy<Proxy::ClientApi>
-{
-public:
-	ClientApiLoader(const FrameworkLoadConfig& load_config)
-		: DllProxy<Proxy::ClientApi>("ClientApiR6"), load_config_(load_config)
-	{}
-	int Open(const std::filesystem::path& path) override;
-
-	// IPF-EF PV IClientApi revision was 3.  We maintain backward compatibility
-	// with all revisions from the current revision back to and including PV.
-	revision_t min_revision_ = CLIENTAPI_REVISION_REL_2_0_101_00;
-	revision_t max_revision_ = CLIENTAPI_CURRENT_REVISION;
-
-private:
-	FrameworkLoadConfig load_config_;
-};
-
-int ClientApiLoader::Open(const std::filesystem::path& libname)
-{
-	// Load from framework install location
-	std::filesystem::path p = GetFrameworkDirectory(load_config_);
-	p /= libname;
-	int rc = super::Open(p.string().c_str());
-	if (rc == ERROR_SUCCESS) {
-		revision_t revision = GetRevision();
-		if (revision < min_revision_ || revision > max_revision_) {
-			rc = EFAULT;
-		}
-	}
-	return rc;
-}
 
 ///////////////////////////////////////////////////////////////////
 // Ipf::ClientApi::Impl = Public User Object Hidden Implementation
@@ -84,6 +47,28 @@ int ClientApiLoader::Open(const std::filesystem::path& libname)
 
 class ClientApi::Impl
 {
+private:
+	// Central client API dispatch helper.
+	// Onboarding checklist for a new ClientApi interface revision:
+	// 1) Add pointer type to ClientApiVariant.
+	// 2) Add ClientApiRevisionTraits specialization.
+	// 3) Existing common methods automatically dispatch without per-method edits.
+	// This must be declared at the top of the class because GCC can't deduce the return type of the
+	// lambda if it is declared after usage of VisitClientApi. MSVC is fine with it for some
+	// reason...
+	template <typename Fn> decltype(auto) VisitClientApi(Fn&& fn)
+	{
+		return std::visit(
+			[&fn](auto* api) -> decltype(auto) {
+				using ApiType = std::remove_pointer_t<decltype(api)>;
+				static_assert(
+					ClientApiRevisionTraits<ApiType>::is_defined,
+					"Missing ClientApiRevisionTraits specialization for ClientApi revision type");
+				return fn(api);
+			},
+			obj_);
+	}
+
 public:
 	explicit Impl(const std::string& config = "{}");
 	~Impl();
@@ -95,7 +80,8 @@ public:
 	{
 		std::string properties = "{}";
 		try {
-			properties = obj_->GetProperties(properties_config);
+			properties = VisitClientApi(
+				[&](auto* api) -> std::string { return api->GetProperties(properties_config); });
 		}
 		catch (...) {
 			RethrowException();
@@ -107,51 +93,57 @@ public:
 	{
 		std::string value;
 		try {
-			value = obj_->GetValue(path);
+			value = VisitClientApi([&](auto* api) -> std::string { return api->GetValue(path); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 		return value;
 	}
+
 	std::string GetNode(const std::string& path)
 	{
 		std::string node = "{}";
 		try {
-			node = obj_->GetNode(path);
+			node = VisitClientApi([&](auto* api) -> std::string { return api->GetNode(path); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 		return node;
 	}
+
 	std::string GetSchema(const std::string& path, SchemaType schema_type)
 	{
 		std::string schema = "{}";
 		try {
-			schema = obj_->GetSchema(path, schema_type);
+			schema = VisitClientApi(
+				[&](auto* api) -> std::string { return api->GetSchema(path, schema_type); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 		return schema;
 	}
+
 	std::string ExecuteCommand(const std::string& path, const std::string& command)
 	{
 		std::string result = "{}";
 		try {
-			result = obj_->ExecuteCommand(path, command);
+			result = VisitClientApi(
+				[&](auto* api) -> std::string { return api->ExecuteCommand(path, command); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 		return result;
 	}
+
 	std::string QueryNode(const std::string& path)
 	{
 		std::string node = "{}";
 		try {
-			node = obj_->QueryNode(path);
+			node = VisitClientApi([&](auto* api) -> std::string { return api->QueryNode(path); });
 		}
 		catch (...) {
 			RethrowException();
@@ -163,16 +155,28 @@ public:
 		const std::string& path, EventCallback cb, void* context, const std::string& event_settings)
 	{
 		try {
-			obj_->RegisterEvent(path, cb, context, event_settings);
+			VisitClientApi([&](auto* api) {
+				using ApiType = std::remove_pointer_t<decltype(api)>;
+				if constexpr (ClientApiRevisionTraits<ApiType>::supports_event_settings) {
+					api->RegisterEvent(path, cb, context, event_settings);
+				}
+				else {
+					if (!event_settings.empty() && event_settings != "null") {
+						throw Ipf::ApiFeatureUnavailableException("Event settings");
+					}
+					api->RegisterEvent(path, cb, context);
+				}
+			});
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
+
 	void UnregisterEvent(const std::string& path, EventCallback cb)
 	{
 		try {
-			obj_->UnregisterEvent(path, cb);
+			VisitClientApi([&](auto* api) { api->UnregisterEvent(path, cb); });
 		}
 		catch (...) {
 			RethrowException();
@@ -182,65 +186,69 @@ public:
 	void SetValue(const std::string& path, bool value)
 	{
 		try {
-			obj_->SetValue(path, value);
+			VisitClientApi([&](auto* api) { api->SetValue(path, value); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
-	void SetValue(const std::string& path, int value)
-	{
-		try {
-			obj_->SetValue(path, static_cast<int64_t>(value));
-		}
-		catch (...) {
-			RethrowException();
-		}
-	}
+
 	void SetValue(const std::string& path, int64_t value)
 	{
 		try {
-			obj_->SetValue(path, value);
+			VisitClientApi([&](auto* api) { api->SetValue(path, value); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
+
 	void SetValue(const std::string& path, double value)
 	{
 		try {
-			obj_->SetValue(path, value);
+			VisitClientApi([&](auto* api) { api->SetValue(path, value); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
+
 	void SetValue(const std::string& path, const std::string& value)
 	{
 		try {
-			obj_->SetValue(path, value);
+			VisitClientApi([&](auto* api) { api->SetValue(path, value); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
+
 	void SetValue(const std::string& path, const char* value)
 	{
 		if (value == nullptr) {
 			throw InvalidArgumentException("SetValue: value parameter cannot be null");
 		}
 		try {
-			obj_->SetValue(path, value);
+			VisitClientApi([&](auto* api) { api->SetValue(path, value); });
 		}
 		catch (...) {
 			RethrowException();
 		}
 	}
+
 	std::string GetCapabilities(const std::string& path)
 	{
 		std::string capabilities = "{}";
 		try {
-			capabilities = obj_->GetCapabilities(path);
+			capabilities = VisitClientApi([&](auto* api) -> std::string {
+				using ApiType = std::remove_pointer_t<decltype(api)>;
+				if constexpr (ClientApiRevisionTraits<ApiType>::supports_get_capabilities) {
+					return api->GetCapabilities(path);
+				}
+				else {
+					throw Ipf::ApiFeatureUnavailableException("GetCapabilities");
+				}
+			});
 		}
 		catch (...) {
 			RethrowException();
@@ -250,73 +258,9 @@ public:
 
 private:
 	std::unique_ptr<ClientApiLoader> lib_; // DLL Loader object
-	Proxy::ClientApi* obj_ = nullptr;      // DLL-created object (Raw Pointer)
+	ClientApiVariant obj_; // DLL-created object (raw pointer wrapped in variant type to handle
+						   // multiple revisions)
 };
-
-// Maximum allowed values for framework load configuration
-static constexpr unsigned int MAX_INITIAL_FRAMEWORK_RETRIES = 1000;
-static constexpr unsigned int MAX_RETRY_DELAY_MS = 60000;
-
-// Helper function to parse framework load configuration from JSON config string
-static FrameworkLoadConfig ParseFrameworkLoadConfig(const std::string& config)
-{
-	FrameworkLoadConfig load_config;
-
-	if (config.empty() || config == "{}") {
-		return load_config;
-	}
-
-	nlohmann::json config_json = nlohmann::json::parse(config);
-
-	// Check platform config location first (body.options.framework_load_options)
-	if (config_json.contains(JsonFields::BODY) &&
-		config_json[JsonFields::BODY].contains(JsonFields::OPTIONS) &&
-		config_json[JsonFields::BODY][JsonFields::OPTIONS].contains(
-			JsonFields::FRAMEWORK_LOAD_OPTIONS) &&
-		config_json[JsonFields::BODY][JsonFields::OPTIONS][JsonFields::FRAMEWORK_LOAD_OPTIONS]
-			.contains(JsonFields::INITIAL_FRAMEWORK_RETRIES)) {
-		load_config.initial_framework_retries =
-			config_json[JsonFields::BODY][JsonFields::OPTIONS][JsonFields::FRAMEWORK_LOAD_OPTIONS]
-					   [JsonFields::INITIAL_FRAMEWORK_RETRIES];
-		if (config_json[JsonFields::BODY][JsonFields::OPTIONS][JsonFields::FRAMEWORK_LOAD_OPTIONS]
-				.contains(JsonFields::RETRY_DELAY_MS)) {
-			load_config.retry_delay_ms =
-				config_json[JsonFields::BODY][JsonFields::OPTIONS]
-						   [JsonFields::FRAMEWORK_LOAD_OPTIONS][JsonFields::RETRY_DELAY_MS];
-		}
-	}
-	// Check provider config location (body.framework_load_options)
-	else if (
-		config_json.contains(JsonFields::BODY) &&
-		config_json[JsonFields::BODY].contains(JsonFields::FRAMEWORK_LOAD_OPTIONS) &&
-		config_json[JsonFields::BODY][JsonFields::FRAMEWORK_LOAD_OPTIONS].contains(
-			JsonFields::INITIAL_FRAMEWORK_RETRIES)) {
-		load_config.initial_framework_retries =
-			config_json[JsonFields::BODY][JsonFields::FRAMEWORK_LOAD_OPTIONS]
-					   [JsonFields::INITIAL_FRAMEWORK_RETRIES];
-		if (config_json[JsonFields::BODY][JsonFields::FRAMEWORK_LOAD_OPTIONS].contains(
-				JsonFields::RETRY_DELAY_MS)) {
-			load_config.retry_delay_ms =
-				config_json[JsonFields::BODY][JsonFields::FRAMEWORK_LOAD_OPTIONS]
-						   [JsonFields::RETRY_DELAY_MS];
-		}
-	}
-
-	// Check if outside bounds. It's Unsigned, so only need to check upper bound
-	if (load_config.initial_framework_retries > MAX_INITIAL_FRAMEWORK_RETRIES) {
-		// Throw early. Full schema validation in the framework will also catch this
-		throw Ipf::IpfException(
-			"initial_framework_retries value is outside of bounds 0 to " +
-			std::to_string(MAX_INITIAL_FRAMEWORK_RETRIES));
-	}
-	if (load_config.retry_delay_ms > MAX_RETRY_DELAY_MS) {
-		// Throw early. Full schema validation in the framework will also catch this
-		throw Ipf::IpfException(
-			"retry_delay_ms value is outside of bounds 0 to " + std::to_string(MAX_RETRY_DELAY_MS));
-	}
-
-	return load_config;
-}
 
 // Public User Object Hidden Constructor
 ClientApi::Impl::Impl(const std::string& config) : lib_(), obj_()
@@ -326,27 +270,14 @@ ClientApi::Impl::Impl(const std::string& config) : lib_(), obj_()
 
 	// Create a new instance of the DLL Loader for each instance of this class
 	// so the DLL stays loaded until all instances of this class are destroyed
-	int error = ENOMEM;
-	lib_ = std::make_unique<ClientApiLoader>(load_config);
-	if (lib_) {
-		error = lib_->Open(CLIENTAPI_DLLNAME);
-		if (error) {
-			lib_.reset();
-		}
+	const std::filesystem::path framework_path = GetFrameworkDirectory(load_config);
+	lib_ = std::make_unique<ClientApiLoader>();
+	try {
+		lib_->Open(framework_path, load_config.minimum_clientapi_revision);
 	}
-	if (error) {
-		std::map<int, const char*> errormap = {
-			{EINVAL, "Parameter is Null"},
-			{EEXIST, "Library Already Loaded"},
-			{ENXIO, "Symbol Not Found"},
-			{ENOENT, "Cannot Open Library"},
-			{EFAULT, "Incompatible Version"},
-			{ENOEXEC, "Incompatible Build Configuration"},
-			{EILSEQ, "Invalid Digital Signature"},
-		};
-		throw FrameworkException(
-			std::string(FrameworkException::LIB_LOAD) + CLIENTAPI_DLLNAME + " : " +
-			std::to_string(error) + " : " + errormap[error]);
+	catch (...) {
+		lib_.reset();
+		RethrowException();
 	}
 
 	// Create DLL-Exported class instance
@@ -358,17 +289,18 @@ ClientApi::Impl::Impl(const std::string& config) : lib_(), obj_()
 	catch (...) {
 		RethrowException();
 	}
-
-	if (!obj_) {
-		throw FrameworkException(std::string(FrameworkException::OBJECT_ERROR) + "ClientApi");
-	}
 }
 
 ClientApi::Impl::~Impl()
 {
 	// Destroy DLL-Exported class instance
-	if (lib_ && obj_) {
-		lib_->DestroyInstance(obj_);
+	if (lib_) {
+		try {
+			lib_->DestroyInstance(obj_);
+		}
+		catch (...) {
+			// Can't throw here. Won't get here in practice - won't hit the dtor without an obj_
+		}
 	}
 }
 
@@ -432,7 +364,8 @@ void ClientApi::SetValue(const std::string& path, bool value)
 
 void ClientApi::SetValue(const std::string& path, int value)
 {
-	pImpl->SetValue(path, value);
+	// ClientApiProxy only uses int64_t
+	pImpl->SetValue(path, static_cast<int64_t>(value));
 }
 
 void ClientApi::SetValue(const std::string& path, int64_t value)

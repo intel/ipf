@@ -1,16 +1,16 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    2, 4, 10400, 27
- PRODUCTVERSION 2, 4, 10400, 27
+ FILEVERSION    2, 5, 10200, 18
+ PRODUCTVERSION 2, 5, 10200, 18
 
 BEGIN
  BLOCK "StringFileInfo"
  BEGIN
   BLOCK "040904E4"
   BEGIN
-   VALUE "ProductVersion",   "2.4.10400.27"
-   VALUE "FileVersion",      "2.4.10400.27"
+   VALUE "ProductVersion",   "2.5.10200.18"
+   VALUE "FileVersion",      "2.5.10200.18"
    VALUE "LegalCopyright",   "Copyright (c) 2020-2026 Intel Corporation All Rights Reserved. SPDX-License-Identifier: Apache-2.0"
    VALUE "CompanyName",      "Intel(R) Corporation"
    VALUE "ProductName",      "Intel(R) Innovation Platform Framework"
